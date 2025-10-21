@@ -394,111 +394,9 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算", "電窯成本計算", "釉料預測","賽格式計算器","釉料三軸表"))
+page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算","賽格式計算器","釉料三軸表"))
 
-if page == "電窯成本計算":
-    st.subheader("請輸入尺寸")
-
-    # 使用 columns() 將長、寬、高的輸入框顯示在同一行
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        # 允許用戶留空，並檢查是否是有效的數字
-        length_input = st.text_input("長 (cm):")
-        length = None
-        if length_input:
-            try:
-                length = float(length_input)
-                if length <= 0:
-                    st.warning("請輸入大於0的數字。")
-                    length = None
-            except ValueError:
-                st.warning("請輸入有效的數字。")
-
-    with col2:
-        width_input = st.text_input("寬 (cm):")
-        width = None
-        if width_input:
-            try:
-                width = float(width_input)
-                if width <= 0:
-                    st.warning("請輸入大於0的數字。")
-                    width = None
-            except ValueError:
-                st.warning("請輸入有效的數字。")
-
-    with col3:
-        height_input = st.text_input("高度 (cm):")
-        height = None
-        if height_input:
-            try:
-                height = float(height_input)
-                if height <= 0:
-                    st.warning("請輸入大於0的數字。")
-                    height = None
-            except ValueError:
-                st.warning("請輸入有效的數字。")
-        
-    # 檢查是否填寫了所有必要的尺寸
-    if length and width and height:
-        dimensions = {'長': length, '寬': width, '高度': height}
-    else:
-        dimensions = {}
-
-    # 設置計算價格的按鈕
-    calculate_button = st.button("計算價格")
-    reset_button = st.button("清零")  # 用於清空輸入
-
-    # 初始化總成本和作品計數變數
-    if 'total_cost' not in st.session_state:
-        st.session_state.total_cost = 0  # 初始化總成本為 0
-    if 'work_counter' not in st.session_state:
-        st.session_state.work_counter = 1  # 初始化作品計數器，從第1個作品開始
-    if 'costs_history' not in st.session_state:
-        st.session_state.costs_history = []  # 初始化歷史成本記錄
-
-    # 當用戶點擊計算價格按鈕後，顯示價格
-    if calculate_button:
-        if dimensions:
-            cost = calculate_cost(dimensions)  # 假設你已經有這個 calculate_cost 函數
-            cost = round(cost, -1)  # 四捨五入
-            
-            # 保存這次的計算結果到歷史，包含尺寸與價格
-            st.session_state.costs_history.append({
-                'dimensions': dimensions,
-                'cost': cost
-            })
-            
-            # 累加成本
-            st.session_state.total_cost += cost
-            
-            # 增加作品計數器
-            st.session_state.work_counter += 1
-        else:
-            st.warning("請填寫尺寸資訊以計算價格。")
-
-    # 當用戶點擊清空按鈕，重置輸入框並計算下一個作品
-    if reset_button:
-        # 清空已經輸入的尺寸值
-        length = width = height = 0
-        dimensions = {}
-        # 清空歷史成本
-        st.session_state.costs_history = []
-        st.session_state.total_cost = 0  # 清空累計總成本
-        st.session_state.work_counter = 1  # 重置作品計數器，從第1個作品開始
-
-    # 顯示歷史計算的價格和尺寸
-    if st.session_state.costs_history:
-        st.markdown("<h5>歷史價格</h5>", unsafe_allow_html=True)
-        for idx, record in enumerate(st.session_state.costs_history, 1):
-            dimensions = record['dimensions']
-            cost = record['cost']
-            st.write(f"第 {idx} 個作品價格: {cost} 元, 尺寸: {dimensions['長']} x {dimensions['寬']} x {dimensions['高度']} cm")
-        
-    # 顯示總成本
-    st.subheader(f"總成本: {st.session_state.total_cost} 元")
-
-elif page == "石膏板材料計算":
+if page == "石膏板材料計算":
     st.subheader("石膏板材料計算(石膏比重採2.21)")
     length_input = st.text_input("長 (cm):")
     width_input = st.text_input("寬 (cm):")
@@ -599,11 +497,8 @@ elif page == "收縮率計算":
         st.markdown("### 收縮率對照表 (8% ~ 15%)")
         st.dataframe(styled_df, use_container_width=True)
 
-elif page == "釉料預測":
-    st.subheader(f"施工中")
-
 # --- 賽格式計算器頁面 ---
-elif page == "賽格式計算器":
+elif page == "賽格式計算":
     glaze_app()
 
 elif page == "釉料三軸表":
