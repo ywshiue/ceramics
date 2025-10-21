@@ -73,7 +73,7 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     6. 顯示三角形圖與表格
     """
     
-    st.title("賽格式計算器")
+    st.title("賽格式計算")
     
     # 讀取 Excel
     df = pd.read_excel(excel_path)
@@ -394,7 +394,7 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算","賽格式計算器","釉料三軸表"))
+page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算","賽格式計算","釉料三軸表"))
 
 if page == "石膏板材料計算":
     st.subheader("石膏板材料計算(石膏比重採2.21)")
