@@ -252,51 +252,6 @@ def glaze_app(excel_path="glaze_ingredients.xlsx"):
         st.dataframe(total_moles_df)
         st.subheader("Seger 比例 ( RO 為1)")
         st.code(seger_ratio_text)
-   
-
-# 釉藥配方換算頁面函數
-# -----------------------------
-def glaze_recipe_page():
-    st.subheader("🎨 釉藥配方換算器")
-
-    EXCEL_PATH = "青青土氣釉藥配方.xlsx"
-    df = pd.read_excel(EXCEL_PATH)
-
-    required_cols = {"Recipe_ID", "配方顏色", "成分", "克重(per 100g)"}
-    if not required_cols.issubset(df.columns):
-        st.error(f"Excel 必須包含欄位: {required_cols}")
-        return  
-
-    df["選單顯示"] = df["Recipe_ID"].astype(str) + " | " + df["配方顏色"]
-    selected = st.selectbox("選擇配方", df["選單顯示"].unique())
-    recipe_id = selected.split(" | ")[0]
-    recipe_df = df[df["Recipe_ID"] == recipe_id].copy()
-
-    st.markdown(f"**配方：{recipe_id} | {recipe_df['配方顏色'].iloc[0]}**")
-
-    target_weight = st.number_input("輸入自訂目標總重量 (g)", min_value=0.0, step=1.0)
-    weight_col_name = f"{target_weight:.0f} g"
-
-    combined_df = recipe_df.copy()
-    combined_df["500g"] = combined_df["克重(per 100g)"] * 5
-    combined_df[weight_col_name] = combined_df["克重(per 100g)"] * (target_weight / 100)
-    combined_df = combined_df.round(2)
-
-    # 新增 checklist 欄位
-    combined_df["已準備"] = False  
-
-
-    # 用 data_editor 顯示（可勾選）
-    edited_df = st.data_editor(
-        combined_df[["成分", "克重(per 100g)", "500g", weight_col_name, "已準備"]],
-        use_container_width=True,
-        hide_index=True,
-    )
-
-    # 顯示已完成項目
-    st.subheader("✅ 已準備完成")
-    st.write(edited_df[edited_df["已準備"] == True])
-
 
     
 def calculate_plaster(length, width, height, proportion):
@@ -439,7 +394,7 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算", "電窯成本計算", "釉料預測", "釉藥配方換算","賽格式計算器","釉料三軸表"))
+page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算", "電窯成本計算", "釉料預測","賽格式計算器","釉料三軸表"))
 
 if page == "電窯成本計算":
     st.subheader("請輸入尺寸")
@@ -643,11 +598,6 @@ elif page == "收縮率計算":
 
         st.markdown("### 收縮率對照表 (8% ~ 15%)")
         st.dataframe(styled_df, use_container_width=True)
-
-# --- 釉藥配方換算頁面 ---
-elif page == "釉藥配方換算":
-    glaze_recipe_page()
-
 
 elif page == "釉料預測":
     st.subheader(f"施工中")
