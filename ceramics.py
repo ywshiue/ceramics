@@ -210,7 +210,7 @@ def glaze_seger_calculator():
                 "Z= " + format_number(row['Z_R2O3 (克)']),
                 ha='center', fontsize=4)
 
-        ax.text(x, y - size*0.5,
+        ax.text(x, y - size*0.55,
                 f"{color_name} {format_number(row['Color (克)'])}",
                 ha='center', fontsize=4, color='green')
 
