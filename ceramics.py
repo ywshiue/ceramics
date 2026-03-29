@@ -250,7 +250,7 @@ def glaze_ternary_21points_numbered():
         ax.text(x, y + size*0.35,
                 number_text,
                 ha='center', va='bottom',
-                fontsize=6, color='blue', weight='bold')
+                fontsize=4, color='blue', weight='bold')
 
         ax.text(x, y,
                 xyz_text,
