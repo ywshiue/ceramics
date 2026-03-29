@@ -227,8 +227,8 @@ def glaze_seger_calculator():
     # UI
     # -----------------------
     total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
-
-    color_percent = st.slider("呈色 (%)", 0.0, 10.0, 3.0, step=1.0)
+    color_name = st.selectbox("顏色成分", color_options)
+    color_percent = st.slider("顏色成分 (%)", 0.0, 10.0, 0.0, step=1.0)
 
     color_options = (
         df_excel[df_excel["類型"] == "變價氧化物"]["氧化物組成"]
@@ -237,16 +237,16 @@ def glaze_seger_calculator():
         .tolist()
     )
 
-    color_name = st.selectbox("顏色成分", color_options)
+    
 
     # -----------------------
     # XYZ 對應材料（重點）
     # -----------------------
     ingredient_options = df_excel["成分名稱"].dropna().unique().tolist()
 
-    x_ing = st.selectbox("X 軸原料（RO）", ingredient_options)
-    y_ing = st.selectbox("Y 軸原料（RO2）", ingredient_options)
-    z_ing = st.selectbox("Z 軸原料（R2O3）", ingredient_options)
+    x_ing = st.selectbox("X 軸原料（RO）", "氧化鈣")
+    y_ing = st.selectbox("Y 軸原料（RO2）", "氧化矽")
+    z_ing = st.selectbox("Z 軸原料（R2O3）", "氧化鋁")
 
     # -----------------------
     # 顏色克重拆分
