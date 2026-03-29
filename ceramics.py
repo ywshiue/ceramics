@@ -164,7 +164,7 @@ def draw_hex(ax, cx, cy, size):
 
 
 def glaze_ternary_21points_numbered():
-    st.title("釉料三軸表（蜂巢六角版）")
+    st.title("釉料三軸表")
 
     # === 讀 Excel ===
     df_excel = pd.read_excel("glaze_ingredients.xlsx")
@@ -173,7 +173,7 @@ def glaze_ternary_21points_numbered():
     total_weight = st.number_input("總克重 (克)",min_value=0.0,value=100.0,step=1.0)
 
     # 顏色 % → slider
-    color_percent = st.slider("顏色添加 (%)", 0.0, 10.0, 3.0, step=1.0)
+    color_percent = st.slider("呈色 (%)", 0.0, 10.0, 3.0, step=1.0)
 
     # 篩選變價氧化物
     color_options = (
@@ -183,14 +183,14 @@ def glaze_ternary_21points_numbered():
         .tolist()
     )
 
-    color_name = st.selectbox("顏色材料", color_options)
+    color_name = st.selectbox("顏色成分", color_options)
     
     color_weight = total_weight * (color_percent / 100)
     base_total = total_weight - color_weight
 
     st.write("-----")
     st.write(f"基礎配方克重：{format_number(base_total)} g")
-    st.write(f"顏色配料克重：{format_number(color_weight)} g")
+    st.write(f"顏色成分克重：{format_number(color_weight)} g")
 
     # === 三軸參數 ===
     n = 11
@@ -210,7 +210,7 @@ def glaze_ternary_21points_numbered():
 
     df = pd.DataFrame(
         data,
-        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j']
+        columns=['編號','X(RO)','Y(RO2)','Z(R2O3)','i','j']
     )
 
     # === 顏色計算 ===
@@ -218,9 +218,9 @@ def glaze_ternary_21points_numbered():
     base_total = total_weight - color_weight
     factor = base_total / max_val
 
-    df['X (克)'] = df['X_ratio'] * factor
-    df['Y (克)'] = df['Y_ratio'] * factor
-    df['Z (克)'] = df['Z_ratio'] * factor
+    df['X (克)'] = df['X(RO)'] * factor
+    df['Y (克)'] = df['Y(RO2)'] * factor
+    df['Z (克)'] = df['Z(R2O3)'] * factor
     df['Color (克)'] = color_weight
 
     # === 畫圖 ===
@@ -247,13 +247,13 @@ def glaze_ternary_21points_numbered():
         number_text = str(int(row['編號']))
 
         x_text = (
-            f"{format_number(row['X (克)'])}"
+            f"{format_number(row['X_RO (克)'])}"
         )
         y_text = (
-            f"{format_number(row['Y (克)'])}"
+            f"{format_number(row['Y_RO2 (克)'])}"
         )
         z_text = (
-            f"{format_number(row['Z (克)'])}"
+            f"{format_number(row['Z_R2O3 (克)'])}"
         )
 
         color_text = f"{color_name} {format_number(row['Color (克)'])}"
@@ -294,10 +294,10 @@ def glaze_ternary_21points_numbered():
 
     # === 表格 ===
     df_display = df.copy()
-    for col in ['X (克)','Y (克)','Z (克)','Color (克)']:
+    for col in ['X_RO (克)','Y_RO2 (克)','Z_R2O3 (克)','Color (克)']:
         df_display[col] = df_display[col].apply(format_number)
 
-    st.dataframe(df_display[['編號','X (克)','Y (克)','Z (克)','Color (克)']])
+    st.dataframe(df_display[['編號','X_RO (克)','Y_RO2 (克)','Z_R2O3 (克)','Color (克)']])
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
