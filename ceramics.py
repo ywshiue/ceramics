@@ -184,6 +184,13 @@ def glaze_ternary_21points_numbered():
     )
 
     color_name = st.selectbox("顏色材料", color_options)
+    
+    color_weight = total_weight * (color_percent / 100)
+    base_total = total_weight - color_weight
+
+    st.write("-----")
+    st.write(f"基礎配方克重：{format_number(base_total)} g")
+    st.write(f"顏色配料克重：{format_number(color_weight)} g")
 
     # === 三軸參數 ===
     n = 11
