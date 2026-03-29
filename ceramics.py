@@ -218,9 +218,9 @@ def glaze_ternary_21points_numbered():
     base_total = total_weight - color_weight
     factor = base_total / max_val
 
-    df['X (克)'] = df['X(RO)'] * factor
-    df['Y (克)'] = df['Y(RO2)'] * factor
-    df['Z (克)'] = df['Z(R2O3)'] * factor
+    df['X_RO (克)'] = df['X(RO)'] * factor
+    df['Y_RO2 (克)'] = df['Y(RO2)'] * factor
+    df['Z_R2O3 (克)'] = df['Z(R2O3)'] * factor
     df['Color (克)'] = color_weight
 
     # === 畫圖 ===
