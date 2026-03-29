@@ -184,13 +184,15 @@ def glaze_ternary_21points_numbered():
     
     for idx, row in df_ratio.iterrows():
         # 對應 i,j
-        i = int((50 - row['X_ratio'] - row['Y_ratio']) // step)
+        i = int((max_val - row['X_ratio'] - row['Y_ratio']) // step)
         j = int(row['Y_ratio'] // step)
     
         # 小三角形頂點
-        x0, y0 = (j + 0.5*i)/n, i*np.sqrt(3)/(2*n)
-        x1, y1 = x0 + 1/n, y0
-        x2, y2 = x0 + 0.5/n, y0 + np.sqrt(3)/(2*n)
+        den = (n - 1)
+        
+        x0, y0 = (j + 0.5*i)/den, i*np.sqrt(3)/(2*den)
+        x1, y1 = x0 + 1/den, y0
+        x2, y2 = x0 + 0.5/den, y0 + np.sqrt(3)/(2*den)
     
         # 畫三角形
         tri = Polygon([[x0,y0],[x1,y1],[x2,y2]], closed=True,
