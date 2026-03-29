@@ -144,116 +144,121 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     st.pyplot(fig)
     
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
+
+def format_number(val):
+    """如果是整數就不顯示 .0"""
+    if float(val).is_integer():
+        return str(int(val))
+    return str(round(val,1))
+
+
+def draw_hex(ax, center_x, center_y, size):
+    """畫尖角朝上的六角形"""
+    angles = np.radians([30, 90, 150, 210, 270, 330])
+    points = [
+        (center_x + size*np.cos(a), center_y + size*np.sin(a))
+        for a in angles
+    ]
+    hexagon = Polygon(points, closed=True, edgecolor='lightgray',
+                      facecolor='none', lw=0.8)
+    ax.add_patch(hexagon)
+
+
 def glaze_ternary_21points_numbered():
-    import numpy as np
-    import pandas as pd
-    import matplotlib.pyplot as plt
-    from matplotlib.patches import RegularPolygon
-    import streamlit as st
-    
-    st.title("釉料三軸表（含顏色添加）")
-    
-    # ===== 使用者輸入 =====
-    total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
-    
-    color_percent_input = st.text_input("顏色添加 (%)", value="0")
-    
-    try:
-        color_percent = float(color_percent_input)
-    except:
-        color_percent = 0.0
-    
-    # ===== 顏料計算 =====
-    color_weight = total_weight * color_percent / 100
-    base_weight = total_weight - color_weight
-    
-    st.write(f"基底釉: {base_weight:.1f} g")
-    st.write(f"顏色添加: {color_weight:.1f} g")
-    
-    # ===== 數值格式 =====
-    def format_number(x):
-        return str(int(x)) if x == int(x) else str(x)
-    
-    # ===== 三軸參數 =====
+    st.title("釉料三軸表（蜂巢六角版）")
+
+    # === 基本輸入 ===
+    total_weight = st.number_input("總克重 (克)", 0.0, 100.0, step=1.0)
+
+    color_percent = st.number_input("顏色添加 (%)", 0.0, 3.0, step=0.1)
+    color_name = st.text_input("顏色材料名稱", "CuO")
+
+    # === 參數 ===
     n = 11
     step = 10
     max_val = step * (n - 1)
-    
-    # ===== 建立比例 =====
+
+    # === 建立比例表 ===
     data = []
     number = 1
     for i in reversed(range(n)):
-        for j in range(n-i):
+        for j in range(n - i):
             z_val = i * step
             y_val = j * step
             x_val = max_val - y_val - z_val
-            data.append([number, x_val, y_val, z_val])
+            data.append([number, x_val, y_val, z_val, i, j])
             number += 1
-    
-    df_ratio = pd.DataFrame(data, columns=['編號','X_ratio','Y_ratio','Z_ratio'])
-    
-    # ===== 比例換算 =====
-    factor = base_weight / max_val
-    
-    df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(1)
-    df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(1)
-    df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(1)
-    df_ratio['顏料 (克)'] = round(color_weight, 1)
-    
-    # ===== 畫圖（唯一修改區）=====
+
+    df_ratio = pd.DataFrame(
+        data,
+        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j']
+    )
+
+    # === 顏色計算 ===
+    color_weight = total_weight * (color_percent / 100)
+    base_total = total_weight - color_weight
+    factor = base_total / max_val
+
+    df_ratio['X (克)'] = df_ratio['X_ratio'] * factor
+    df_ratio['Y (克)'] = df_ratio['Y_ratio'] * factor
+    df_ratio['Z (克)'] = df_ratio['Z_ratio'] * factor
+    df_ratio['Color (克)'] = color_weight
+
+    # === 畫蜂巢 ===
     fig, ax = plt.subplots(figsize=(6,6))
-    
-    for idx, row in df_ratio.iterrows():
-        i = int((max_val - row['X_ratio'] - row['Y_ratio']) // step)
-        j = int(row['Y_ratio'] // step)
-    
-        # 原本三角座標（完全保留）
-        den = (n - 1)
-        x0, y0 = (j + 0.5*i)/den, i*np.sqrt(3)/(2*den)
-    
-        # ===== 改成六角形 =====
-        hexagon = RegularPolygon(
-            (x0, y0),
-            numVertices=6,
-            radius=0.035,   # 可微調大小
-            orientation=np.radians(30),
-            edgecolor='lightgray',
-            facecolor='none',
-            lw=0.8
-        )
-        ax.add_patch(hexagon)
-    
-        # ===== 文字（完全保留）=====
+
+    size = 1 / (n * 1.2)
+
+    for _, row in df_ratio.iterrows():
+        i = int(row['i'])
+        j = int(row['j'])
+
+        # === pointy-top hex grid 座標 ===
+        x = size * (np.sqrt(3) * (j + 0.5 * i))
+        y = size * (3/2 * i)
+
+        draw_hex(ax, x, y, size)
+
+        # === 文字 ===
         number_text = f"{int(row['編號'])}"
-        
-        xyz_text = f"{format_number(row['X (克)'])}," \
-                   f"{format_number(row['Y (克)'])}," \
-                   f"{format_number(row['Z (克)'])}"
-        
-        color_text = f"+{format_number(row['顏料 (克)'])}g"
-    
-        ax.text(x0, y0 + 0.015, number_text,
-                ha='center', va='bottom', fontsize=6,
-                color='blue', weight='bold')
-    
-        ax.text(x0, y0, xyz_text,
-                ha='center', va='center', fontsize=6, color='black')
-    
-        ax.text(x0, y0 - 0.02, color_text,
-                ha='center', va='top', fontsize=5, color='red')
-    
+
+        xyz_text = (
+            f"{format_number(row['X (克)'])},"
+            f"{format_number(row['Y (克)'])},"
+            f"{format_number(row['Z (克)'])}"
+        )
+
+        color_text = f"{color_name} {format_number(row['Color (克)'])}"
+
+        ax.text(x, y + size*0.3, number_text,
+                ha='center', va='bottom',
+                fontsize=6, color='blue', weight='bold')
+
+        ax.text(x, y,
+                xyz_text,
+                ha='center', va='center',
+                fontsize=6)
+
+        ax.text(x, y - size*0.35,
+                color_text,
+                ha='center', va='top',
+                fontsize=5, color='green')
+
     ax.set_aspect('equal')
     ax.axis('off')
     st.pyplot(fig)
-    
-    # ===== 表格 =====
+
+    # === 表格 ===
     df_display = df_ratio.copy()
-    
-    for col in ['X (克)', 'Y (克)', 'Z (克)', '顏料 (克)']:
+    for col in ['X (克)','Y (克)','Z (克)','Color (克)']:
         df_display[col] = df_display[col].apply(format_number)
-    
-    st.subheader("各點位配方")
-    st.dataframe(df_display[['編號','X (克)','Y (克)','Z (克)','顏料 (克)']])
+
+    st.dataframe(df_display[['編號','X (克)','Y (克)','Z (克)','Color (克)']])
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
