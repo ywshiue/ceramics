@@ -144,12 +144,7 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     st.pyplot(fig)
     
 
-import streamlit as st
-import pandas as pd
-import numpy as np
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-
+#-----------------------------------
 
 def format_number(val):
     if float(val).is_integer():
@@ -175,14 +170,18 @@ def glaze_ternary_21points_numbered():
     df_excel = pd.read_excel("glaze_ingredients.xlsx")
 
     # === UI ===
-    total_weight = st.number_input("總克重 (克)", 0.0, 100.0, step=1.0)
+    total_weight_input = st.text_input("總克重 (克)", "")    
+    try:
+        total_weight = float(total_weight_input)
+    except:
+        total_weight = 0.0
 
     # 顏色 % → slider
-    color_percent = st.slider("顏色添加 (%)", 0.0, 10.0, 3.0, step=0.1)
+    color_percent = st.slider("顏色添加 (%)", 0.0, 10.0, 3.0, step=1.0)
 
     # 篩選變價氧化物
     color_options = (
-        df_excel[df_excel["類型"] == "變價氧化物"]["成分名稱"]
+        df_excel[df_excel["類型"] == "變價氧化物"]["氧化物組成"]
         .dropna()
         .unique()
         .tolist()
