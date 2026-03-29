@@ -251,29 +251,29 @@ def glaze_ternary_21points_numbered():
 
         color_text = f"{color_name} {format_number(row['Color (克)'])}"
 
-        ax.text(x, y + size*0.5,
+        ax.text(x, y + size*0.45,
                 number_text,
                 ha='center', va='bottom',
-                fontsize=6, color='blue', weight='bold')
+                fontsize=5, color='blue', weight='bold')
 
         ax.text(x, y + size*0.3,
-                "X="+ x_text,
+                "X= "+ x_text,
                 ha='center', va='center',
                 fontsize=4)
         ax.text(x, y,
-                "Y="+ y_text,
+                "Y= "+ y_text,
                 ha='center', va='center',
                 fontsize=4)
         ax.text(x, y - size*0.3,
-                "Z="+ z_text,
+                "Z= "+ z_text,
                 ha='center', va='center',
                 fontsize=4)
         
 
-        ax.text(x, y - size*0.5,
+        ax.text(x, y - size*0.45,
                 color_text,
                 ha='center', va='top',
-                fontsize=5, color='green')
+                fontsize=4, color='green')
 
     # === 防裁切 ===
     padding = size * 1.2
