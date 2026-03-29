@@ -219,7 +219,7 @@ def glaze_ternary_21points_numbered():
     # === 畫圖 ===
     fig, ax = plt.subplots(figsize=(6,6))
 
-    size = 1 / (n * 1.2)
+    size = 1 / (n * 1.2)*2
 
     all_x = []
     all_y = []
