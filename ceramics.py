@@ -214,9 +214,9 @@ def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
 # ===============================
 # 主程式
 # ===============================
-def glaze_seger_calculatord():
+def glaze_seger_calculator():
 
-    st.title("釉料三軸＆賽格式計算器")
+    st.title("釉料三軸賽格式計算器")
 
     # -----------------------
     # 讀 Excel
