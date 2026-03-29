@@ -150,7 +150,6 @@ def glaze_ternary_21points_numbered():
     # ===== 使用者輸入 =====
     total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
     
-    # 顏色添加改為 input
     color_percent_input = st.text_input("顏色添加 (%)", value="0")
     
     try:
@@ -164,6 +163,10 @@ def glaze_ternary_21points_numbered():
     
     st.write(f"基底釉: {base_weight:.1f} g")
     st.write(f"顏色添加: {color_weight:.1f} g")
+    
+    # ===== 數值格式函式 =====
+    def format_number(x):
+        return str(int(x)) if x == int(x) else str(x)
     
     # ===== 三軸參數 =====
     n = 11
@@ -183,14 +186,13 @@ def glaze_ternary_21points_numbered():
     
     df_ratio = pd.DataFrame(data, columns=['編號','X_ratio','Y_ratio','Z_ratio'])
     
-    # ===== 比例換算（用 base_weight）=====
+    # ===== 比例換算 =====
     factor = base_weight / max_val
     
     df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(1)
     df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(1)
     df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(1)
     
-    # ===== 顏料（固定加）=====
     df_ratio['顏料 (克)'] = round(color_weight, 1)
     
     # ===== 畫圖 =====
@@ -213,21 +215,22 @@ def glaze_ternary_21points_numbered():
         x_center = (x0 + x1 + x2)/3
         y_center = (y0 + y1 + y2)/3
     
-        # ===== 文字（重點：換行）=====
         number_text = f"{int(row['編號'])}"
         
-        xyz_text = f"{row['X (克)']},{row['Y (克)']},{row['Z (克)']}"
-        color_text = f"+{row['顏料 (克)']}g"
+        # ✅ 使用格式化函式
+        xyz_text = f"{format_number(row['X (克)'])}," \
+                   f"{format_number(row['Y (克)'])}," \
+                   f"{format_number(row['Z (克)'])}"
+        
+        color_text = f"+{format_number(row['顏料 (克)'])}g"
     
         ax.text(x_center, y_center + 0.015, number_text,
                 ha='center', va='bottom', fontsize=6,
                 color='blue', weight='bold')
     
-        # XYZ
         ax.text(x_center, y_center, xyz_text,
                 ha='center', va='center', fontsize=6, color='black')
     
-        # 顏料（換行顯示）
         ax.text(x_center, y_center - 0.02, color_text,
                 ha='center', va='top', fontsize=5, color='red')
     
@@ -235,9 +238,14 @@ def glaze_ternary_21points_numbered():
     ax.axis('off')
     st.pyplot(fig)
     
-    # ===== 表格 =====
+    # ===== 表格（同樣格式化）=====
+    df_display = df_ratio.copy()
+    
+    for col in ['X (克)', 'Y (克)', 'Z (克)', '顏料 (克)']:
+        df_display[col] = df_display[col].apply(format_number)
+    
     st.subheader("各點位配方")
-    st.dataframe(df_ratio[['編號','X (克)','Y (克)','Z (克)','顏料 (克)']])
+    st.dataframe(df_display[['編號','X (克)','Y (克)','Z (克)','顏料 (克)']])
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
