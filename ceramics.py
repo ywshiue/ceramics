@@ -145,6 +145,12 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     
 
 def glaze_ternary_21points_numbered():
+    import numpy as np
+    import pandas as pd
+    import matplotlib.pyplot as plt
+    from matplotlib.patches import RegularPolygon
+    import streamlit as st
+    
     st.title("釉料三軸表（含顏色添加）")
     
     # ===== 使用者輸入 =====
@@ -164,7 +170,7 @@ def glaze_ternary_21points_numbered():
     st.write(f"基底釉: {base_weight:.1f} g")
     st.write(f"顏色添加: {color_weight:.1f} g")
     
-    # ===== 數值格式函式 =====
+    # ===== 數值格式 =====
     def format_number(x):
         return str(int(x)) if x == int(x) else str(x)
     
@@ -173,11 +179,11 @@ def glaze_ternary_21points_numbered():
     step = 10
     max_val = step * (n - 1)
     
-    # ===== 建立三角比例 =====
+    # ===== 建立比例 =====
     data = []
     number = 1
     for i in reversed(range(n)):
-        for j in range(n - i):
+        for j in range(n-i):
             z_val = i * step
             y_val = j * step
             x_val = max_val - y_val - z_val
@@ -192,53 +198,55 @@ def glaze_ternary_21points_numbered():
     df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(1)
     df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(1)
     df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(1)
-    
     df_ratio['顏料 (克)'] = round(color_weight, 1)
     
-    # ===== 畫圖 =====
+    # ===== 畫圖（唯一修改區）=====
     fig, ax = plt.subplots(figsize=(6,6))
     
     for idx, row in df_ratio.iterrows():
         i = int((max_val - row['X_ratio'] - row['Y_ratio']) // step)
         j = int(row['Y_ratio'] // step)
     
+        # 原本三角座標（完全保留）
         den = (n - 1)
-        
         x0, y0 = (j + 0.5*i)/den, i*np.sqrt(3)/(2*den)
-        x1, y1 = x0 + 1/den, y0
-        x2, y2 = x0 + 0.5/den, y0 + np.sqrt(3)/(2*den)
     
-        tri = Polygon([[x0,y0],[x1,y1],[x2,y2]], closed=True,
-                      edgecolor='lightgray', facecolor='none', lw=0.8)
-        ax.add_patch(tri)
+        # ===== 改成六角形 =====
+        hexagon = RegularPolygon(
+            (x0, y0),
+            numVertices=6,
+            radius=0.035,   # 可微調大小
+            orientation=np.radians(30),
+            edgecolor='lightgray',
+            facecolor='none',
+            lw=0.8
+        )
+        ax.add_patch(hexagon)
     
-        x_center = (x0 + x1 + x2)/3
-        y_center = (y0 + y1 + y2)/3
-    
+        # ===== 文字（完全保留）=====
         number_text = f"{int(row['編號'])}"
         
-        # ✅ 使用格式化函式
         xyz_text = f"{format_number(row['X (克)'])}," \
                    f"{format_number(row['Y (克)'])}," \
                    f"{format_number(row['Z (克)'])}"
         
         color_text = f"+{format_number(row['顏料 (克)'])}g"
     
-        ax.text(x_center, y_center + 0.015, number_text,
+        ax.text(x0, y0 + 0.015, number_text,
                 ha='center', va='bottom', fontsize=6,
                 color='blue', weight='bold')
     
-        ax.text(x_center, y_center, xyz_text,
+        ax.text(x0, y0, xyz_text,
                 ha='center', va='center', fontsize=6, color='black')
     
-        ax.text(x_center, y_center - 0.02, color_text,
+        ax.text(x0, y0 - 0.02, color_text,
                 ha='center', va='top', fontsize=5, color='red')
     
     ax.set_aspect('equal')
     ax.axis('off')
     st.pyplot(fig)
     
-    # ===== 表格（同樣格式化）=====
+    # ===== 表格 =====
     df_display = df_ratio.copy()
     
     for col in ['X (克)', 'Y (克)', 'Z (克)', '顏料 (克)']:
