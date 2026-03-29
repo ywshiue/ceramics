@@ -214,12 +214,12 @@ def glaze_ternary_21points_numbered():
 
     
     # 畫正三角形邊界
-    triangle = np.array([[0,0],[1,0],[0.5,np.sqrt(3)/2],[0,0]])
-    ax.plot(triangle[:,0], triangle[:,1], color='black', lw=2)
+    #triangle = np.array([[0,0],[1,0],[0.5,np.sqrt(3)/2],[0,0]])
+    #ax.plot(triangle[:,0], triangle[:,1], color='black', lw=2)
     
-    ax.set_aspect('equal')
-    ax.axis('off')
-    st.pyplot(fig)
+    #ax.set_aspect('equal')
+    #ax.axis('off')
+    #st.pyplot(fig)
     
     # 顯示表格
 
