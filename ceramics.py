@@ -234,7 +234,7 @@ def glaze_seger_calculator():
         .unique()
         .tolist()
     )
-    color_name = st.selectbox("顏色成分", color_options,"")
+    color_name = st.selectbox("顏色成分", color_options)
     color_percent = st.slider("顏色成分 (%)", 0.0, 10.0, 0.0, step=1.0)
 
     col1, col2, col3 = st.columns(3)
