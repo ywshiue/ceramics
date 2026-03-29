@@ -214,9 +214,9 @@ def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
 # ===============================
 # 主程式
 # ===============================
-def glaze_ternary_21points_numbered():
+def glaze_seger_calculatord():
 
-    st.title("釉料三軸表 + 賽格式整合")
+    st.title("釉料三軸＆賽格式計算器")
 
     # -----------------------
     # 讀 Excel
@@ -707,9 +707,7 @@ elif page == "收縮率計算":
         st.dataframe(styled_df, use_container_width=True)
 
 # --- 賽格式計算器頁面 ---
-elif page == "賽格式計算":
-    glaze_app()
 
 elif page == "釉料三軸表":
-    glaze_ternary_21points_numbered()
+    glaze_seger_calculator()
     
