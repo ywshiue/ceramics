@@ -131,7 +131,7 @@ def draw_ternary(df, title="Ternary"):
 # =========================
 # ④ 主 App
 # =========================
-def glaze_app(excel_path="glaze_materials_streamlit.xlsx"):
+def glaze_app(excel_path="glaze_ingredients.xlsx"):
 
     st.title("三軸 + Seger 整合釉料系統")
 
