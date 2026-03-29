@@ -150,32 +150,43 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
+
 def format_number(val):
-    """如果是整數就不顯示 .0"""
     if float(val).is_integer():
         return str(int(val))
-    return str(round(val,1))
+    return str(round(val, 1))
 
 
-def draw_hex(ax, center_x, center_y, size):
-    """畫尖角朝上的六角形"""
+def parse_percent(text):
+    """支援 3 或 3%"""
+    try:
+        text = text.replace('%', '')
+        return float(text)
+    except:
+        return 0.0
+
+
+def draw_hex(ax, cx, cy, size):
+    """尖角朝上 hex"""
     angles = np.radians([30, 90, 150, 210, 270, 330])
-    points = [
-        (center_x + size*np.cos(a), center_y + size*np.sin(a))
-        for a in angles
-    ]
-    hexagon = Polygon(points, closed=True, edgecolor='lightgray',
-                      facecolor='none', lw=0.8)
+    points = [(cx + size*np.cos(a), cy + size*np.sin(a)) for a in angles]
+    hexagon = Polygon(points, closed=True,
+                      edgecolor='lightgray',
+                      facecolor='none',
+                      lw=0.8)
     ax.add_patch(hexagon)
+    return points
 
 
 def glaze_ternary_21points_numbered():
     st.title("釉料三軸表（蜂巢六角版）")
 
-    # === 基本輸入 ===
+    # === UI ===
     total_weight = st.number_input("總克重 (克)", 0.0, 100.0, step=1.0)
 
-    color_percent = st.number_input("顏色添加 (%)", 0.0, 3.0, step=0.1)
+    color_input = st.text_input("顏色添加 (%)", "3")
+    color_percent = parse_percent(color_input)
+
     color_name = st.text_input("顏色材料名稱", "CuO")
 
     # === 參數 ===
@@ -183,7 +194,7 @@ def glaze_ternary_21points_numbered():
     step = 10
     max_val = step * (n - 1)
 
-    # === 建立比例表 ===
+    # === 建立比例 ===
     data = []
     number = 1
     for i in reversed(range(n)):
@@ -194,38 +205,43 @@ def glaze_ternary_21points_numbered():
             data.append([number, x_val, y_val, z_val, i, j])
             number += 1
 
-    df_ratio = pd.DataFrame(
-        data,
-        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j']
-    )
+    df = pd.DataFrame(data,
+        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j'])
 
     # === 顏色計算 ===
     color_weight = total_weight * (color_percent / 100)
     base_total = total_weight - color_weight
     factor = base_total / max_val
 
-    df_ratio['X (克)'] = df_ratio['X_ratio'] * factor
-    df_ratio['Y (克)'] = df_ratio['Y_ratio'] * factor
-    df_ratio['Z (克)'] = df_ratio['Z_ratio'] * factor
-    df_ratio['Color (克)'] = color_weight
+    df['X (克)'] = df['X_ratio'] * factor
+    df['Y (克)'] = df['Y_ratio'] * factor
+    df['Z (克)'] = df['Z_ratio'] * factor
+    df['Color (克)'] = color_weight
 
-    # === 畫蜂巢 ===
+    # === 畫圖 ===
     fig, ax = plt.subplots(figsize=(6,6))
 
     size = 1 / (n * 1.2)
 
-    for _, row in df_ratio.iterrows():
+    all_x = []
+    all_y = []
+
+    for _, row in df.iterrows():
         i = int(row['i'])
         j = int(row['j'])
 
-        # === pointy-top hex grid 座標 ===
+        # hex 座標（pointy-top）
         x = size * (np.sqrt(3) * (j + 0.5 * i))
         y = size * (3/2 * i)
 
-        draw_hex(ax, x, y, size)
+        # 畫 hex 並收集邊界
+        pts = draw_hex(ax, x, y, size)
+        for px, py in pts:
+            all_x.append(px)
+            all_y.append(py)
 
         # === 文字 ===
-        number_text = f"{int(row['編號'])}"
+        number_text = str(int(row['編號']))
 
         xyz_text = (
             f"{format_number(row['X (克)'])},"
@@ -235,7 +251,8 @@ def glaze_ternary_21points_numbered():
 
         color_text = f"{color_name} {format_number(row['Color (克)'])}"
 
-        ax.text(x, y + size*0.3, number_text,
+        ax.text(x, y + size*0.35,
+                number_text,
                 ha='center', va='bottom',
                 fontsize=6, color='blue', weight='bold')
 
@@ -244,17 +261,24 @@ def glaze_ternary_21points_numbered():
                 ha='center', va='center',
                 fontsize=6)
 
-        ax.text(x, y - size*0.35,
+        ax.text(x, y - size*0.4,
                 color_text,
                 ha='center', va='top',
                 fontsize=5, color='green')
 
+    # === 關鍵修正：避免裁切 ===
+    padding = size * 1.2
+
+    ax.set_xlim(min(all_x) - padding, max(all_x) + padding)
+    ax.set_ylim(min(all_y) - padding, max(all_y) + padding)
+
     ax.set_aspect('equal')
     ax.axis('off')
+
     st.pyplot(fig)
 
     # === 表格 ===
-    df_display = df_ratio.copy()
+    df_display = df.copy()
     for col in ['X (克)','Y (克)','Z (克)','Color (克)']:
         df_display[col] = df_display[col].apply(format_number)
 
