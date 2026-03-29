@@ -471,7 +471,7 @@ elif page == "收縮率計算":
             if rate == 8:
                 clay_type = "雕塑土"
             elif rate == 10:
-                clay_type = "黃陶土"
+                clay_type = "黃陶土,信樂土"
             else:
                 clay_type = ""
 
