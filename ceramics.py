@@ -148,7 +148,7 @@ def glaze_ternary_21points_numbered():
     st.title("釉料三軸表")
     
     # 使用者輸入總克重（單一欄位）
-    total_weight = st.number_input("總克重 (克)", min_value=0.0, value=50.0, step=1.0)
+    total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
     
     
     # 參數設定
