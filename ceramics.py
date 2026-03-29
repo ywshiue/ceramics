@@ -170,11 +170,7 @@ def glaze_ternary_21points_numbered():
     df_excel = pd.read_excel("glaze_ingredients.xlsx")
 
     # === UI ===
-    total_weight_input = st.text_input("總克重 (克)", "")    
-    try:
-        total_weight = float(total_weight_input)
-    except:
-        total_weight = 0.0
+    total_weight = st.number_input("總克重 (克)",min_value=0.0,value=100.0,step=1.0)
 
     # 顏色 % → slider
     color_percent = st.slider("顏色添加 (%)", 0.0, 10.0, 3.0, step=1.0)
