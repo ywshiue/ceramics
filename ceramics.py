@@ -219,7 +219,7 @@ def glaze_ternary_21points_numbered():
     # === 畫圖 ===
     fig, ax = plt.subplots(figsize=(6,6))
 
-    size = 1 / (n * 1.2)*2
+    size = 1 / (n * 1.2)
 
     all_x = []
     all_y = []
@@ -239,23 +239,36 @@ def glaze_ternary_21points_numbered():
 
         number_text = str(int(row['編號']))
 
-        xyz_text = (
-            f"{format_number(row['X (克)'])},"
-            f"{format_number(row['Y (克)'])},"
+        x_text = (
+            f"{format_number(row['X (克)'])}"
+        )
+        y_text = (
+            f"{format_number(row['Y (克)'])}"
+        )
+        z_text = (
             f"{format_number(row['Z (克)'])}"
         )
 
         color_text = f"{color_name} {format_number(row['Color (克)'])}"
 
-        ax.text(x, y + size*0.35,
+        ax.text(x, y + size*0.4,
                 number_text,
                 ha='center', va='bottom',
-                fontsize=6, color='blue', weight='bold')
+                fontsize=5, color='blue', weight='bold')
 
-        ax.text(x, y,
-                xyz_text,
+        ax.text(x, y + size*0.2,
+                x_text,
                 ha='center', va='center',
                 fontsize=4)
+        ax.text(x, y,
+                y_text,
+                ha='center', va='center',
+                fontsize=4)
+        ax.text(x, y - size*0.2,
+                z_text,
+                ha='center', va='center',
+                fontsize=4)
+        
 
         ax.text(x, y - size*0.4,
                 color_text,
