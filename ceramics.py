@@ -354,28 +354,86 @@ def glaze_ternary_21points_numbered():
     st.dataframe(df_display[['編號','X_RO (克)','Y_RO2 (克)','Z_R2O3 (克)','Color (克)']])
 
     # ===============================
-    # ✔ Seger（新增：核心整合）
+    # ===============================
+    # ✔ Seger（修正版：正確加權流程）
     # ===============================
     selected_number = st.selectbox("選擇賽格式計算編號", df['編號'].tolist())
     row = df[df['編號'] == selected_number].iloc[0]
-
-    amounts = {
-        x_ing: float(row['X_RO (克)']),
-        y_ing: float(row['Y_RO2 (克)']),
-        z_ing: float(row['Z_R2O3 (克)'])
+    
+    # -----------------------
+    # Step 1：三軸 → 材料克重
+    # -----------------------
+    x_weight = float(row['X_RO (克)'])
+    y_weight = float(row['Y_RO2 (克)'])
+    z_weight = float(row['Z_R2O3 (克)'])
+    
+    # -----------------------
+    # Step 2：建立「加權氧化物總表」
+    # -----------------------
+    total_moles = {}
+    
+    for ing, amt in {
+        x_ing: x_weight,
+        y_ing: y_weight,
+        z_ing: z_weight
+    }.items():
+    
+        rows = df_excel[df_excel["成分名稱"] == ing]
+    
+        for _, r in rows.iterrows():
+            try:
+                ox_list = [ox.strip() for ox in str(r["氧化物組成"]).split('+')]
+                percent = float(r["百分比"])
+                mw = float(r["分子量（g/mol）"])
+                category = str(r["類別"]).strip()
+            except:
+                continue
+    
+            # ⚠️ 關鍵：先算「質量貢獻」
+            mass_contrib = amt * percent / 100
+    
+            # 再轉 mol
+            mol = mass_contrib / mw
+    
+            # 平均分配（維持你原模型，不改資料結構）
+            mol_each = mol / len(ox_list)
+    
+            for ox in ox_list:
+                if ox not in total_moles:
+                    total_moles[ox] = {"moles": 0.0, "category": category}
+                total_moles[ox]["moles"] += mol_each
+    
+    # -----------------------
+    # Step 3：整理 DataFrame
+    # -----------------------
+    total_moles_df = pd.DataFrame([
+        {"氧化物": ox, "摩爾數": v["moles"], "類別": v["category"]}
+        for ox, v in total_moles.items()
+    ]).sort_values(by="氧化物").reset_index(drop=True)
+    
+    # -----------------------
+    # Step 4：Seger normalization
+    # -----------------------
+    ro_sum = total_moles_df[total_moles_df["類別"] == "RO"]["摩爾數"].sum()
+    r2o3_sum = total_moles_df[total_moles_df["類別"] == "R2O3"]["摩爾數"].sum()
+    ro2_sum = total_moles_df[total_moles_df["類別"] == "RO2"]["摩爾數"].sum()
+    
+    norm = ro_sum if ro_sum != 0 else 1.0
+    
+    seger_ratios = {
+        "RO 鹼類": ro_sum / norm,
+        "R2O3 中性物": r2o3_sum / norm,
+        "RO2 酸類": ro2_sum / norm
     }
-
-    selected_ingredients = [x_ing, y_ing, z_ing]
-
-    seger_df, seger_ratios, seger_text = calculate_seger_moles_from_excel(
-        df_excel,
-        selected_ingredients,
-        amounts
-    )
-
+    
+    seger_text = " + ".join([f"{round(v,2)} {k}" for k, v in seger_ratios.items()])
+    
+    # -----------------------
+    # Step 5：輸出
+    # -----------------------
     st.subheader("賽格式結果")
     st.write(seger_text)
-    st.dataframe(seger_df)
+    st.dataframe(total_moles_df)
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
