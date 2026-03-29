@@ -152,9 +152,9 @@ def glaze_ternary_21points_numbered():
     
     
     # 參數設定
-    max_val = 50
+    max_val = 100
     step = 10
-    n = 6  # 每邊 6 等分
+    n = 11  # 每邊 11 等分
     
     # 建立小三角形 XYZ 比例表
     data = []
