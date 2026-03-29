@@ -157,17 +157,7 @@ def format_number(val):
     return str(round(val, 1))
 
 
-def parse_percent(text):
-    """支援 3 或 3%"""
-    try:
-        text = text.replace('%', '')
-        return float(text)
-    except:
-        return 0.0
-
-
 def draw_hex(ax, cx, cy, size):
-    """尖角朝上 hex"""
     angles = np.radians([30, 90, 150, 210, 270, 330])
     points = [(cx + size*np.cos(a), cy + size*np.sin(a)) for a in angles]
     hexagon = Polygon(points, closed=True,
@@ -181,15 +171,26 @@ def draw_hex(ax, cx, cy, size):
 def glaze_ternary_21points_numbered():
     st.title("釉料三軸表（蜂巢六角版）")
 
+    # === 讀 Excel ===
+    df_excel = pd.read_excel("glaze_ingredients.xlsx")
+
     # === UI ===
     total_weight = st.number_input("總克重 (克)", 0.0, 100.0, step=1.0)
 
-    color_input = st.text_input("顏色添加 (%)", "3")
-    color_percent = parse_percent(color_input)
+    # 顏色 % → slider
+    color_percent = st.slider("顏色添加 (%)", 0.0, 10.0, 3.0, step=0.1)
 
-    color_name = st.text_input("顏色材料名稱", "CuO")
+    # 篩選變價氧化物
+    color_options = (
+        df_excel[df_excel["類型"] == "變價氧化物"]["成分名稱"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
 
-    # === 參數 ===
+    color_name = st.selectbox("顏色材料", color_options)
+
+    # === 三軸參數 ===
     n = 11
     step = 10
     max_val = step * (n - 1)
@@ -205,8 +206,10 @@ def glaze_ternary_21points_numbered():
             data.append([number, x_val, y_val, z_val, i, j])
             number += 1
 
-    df = pd.DataFrame(data,
-        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j'])
+    df = pd.DataFrame(
+        data,
+        columns=['編號','X_ratio','Y_ratio','Z_ratio','i','j']
+    )
 
     # === 顏色計算 ===
     color_weight = total_weight * (color_percent / 100)
@@ -230,17 +233,15 @@ def glaze_ternary_21points_numbered():
         i = int(row['i'])
         j = int(row['j'])
 
-        # hex 座標（pointy-top）
         x = size * (np.sqrt(3) * (j + 0.5 * i))
         y = size * (3/2 * i)
 
-        # 畫 hex 並收集邊界
         pts = draw_hex(ax, x, y, size)
+
         for px, py in pts:
             all_x.append(px)
             all_y.append(py)
 
-        # === 文字 ===
         number_text = str(int(row['編號']))
 
         xyz_text = (
@@ -266,9 +267,8 @@ def glaze_ternary_21points_numbered():
                 ha='center', va='top',
                 fontsize=5, color='green')
 
-    # === 關鍵修正：避免裁切 ===
+    # === 防裁切 ===
     padding = size * 1.2
-
     ax.set_xlim(min(all_x) - padding, max(all_x) + padding)
     ax.set_ylim(min(all_y) - padding, max(all_y) + padding)
 
