@@ -222,6 +222,7 @@ def glaze_seger_calculator():
     # 讀 Excel
     # -----------------------
     df_excel = pd.read_excel("glaze_ingredients.xlsx")
+    ingredient_options = df_excel["成分名稱"].dropna().unique().tolist()
 
     # -----------------------
     # UI
