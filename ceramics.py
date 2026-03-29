@@ -142,9 +142,6 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     ax.set_aspect('equal')
     ax.axis('off')
     st.pyplot(fig)
-    
-
-#-----------------------------------
 
 # ===============================
 # 工具函式（不變）
@@ -432,7 +429,7 @@ def glaze_ternary_21points_numbered():
     # Step 5：輸出
     # -----------------------
     st.subheader("賽格式結果")
-    st.write(seger_text)
+    st.code(seger_text)
     st.dataframe(total_moles_df)
     
 # -----------------------
