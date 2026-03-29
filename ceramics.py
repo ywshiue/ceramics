@@ -463,7 +463,7 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("收縮率計算", "石膏板材料計算","賽格式計算","釉料三軸表"))
+page = st.sidebar.radio("選擇頁面", ("釉料三軸表","賽格式計算","收縮率計算", "石膏板材料計算"))
 
 if page == "石膏板材料計算":
     st.subheader("石膏板材料計算(石膏比重採2.21)")
