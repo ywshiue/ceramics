@@ -603,7 +603,7 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("釉料三軸表","賽格式計算","收縮率計算", "石膏板材料計算"))
+page = st.sidebar.radio("選擇頁面", ("釉料三軸＆賽格式計算器","收縮率計算", "石膏板材料計算"))
 
 if page == "石膏板材料計算":
     st.subheader("石膏板材料計算(石膏比重採2.21)")
@@ -708,6 +708,6 @@ elif page == "收縮率計算":
 
 # --- 賽格式計算器頁面 ---
 
-elif page == "釉料三軸表":
+elif page == "釉料三軸＆賽格式計算器":
     glaze_seger_calculator()
     
