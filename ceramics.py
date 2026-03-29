@@ -145,22 +145,30 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
     
 
 def glaze_ternary_21points_numbered():
-    st.title("釉料三軸表")
+    st.title("釉料三軸表（含顏色添加）")
     
-    # 使用者輸入總克重（單一欄位）
+    # ===== 使用者輸入 =====
     total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
     
+    color_percent = st.number_input("顏色添加 (%)", min_value=0.0, value=0.0, step=0.5)
     
-    # 參數設定
+    # ===== 顏料計算 =====
+    color_weight = total_weight * color_percent / 100
+    base_weight = total_weight - color_weight
+    
+    st.write(f"基底釉: {base_weight:.1f} g")
+    st.write(f"顏色添加: {color_weight:.1f} g")
+    
+    # ===== 三軸參數 =====
     n = 11
     step = 10
     max_val = step * (n - 1)
     
-    # 建立小三角形 XYZ 比例表
+    # ===== 建立三角比例 =====
     data = []
     number = 1
-    for i in reversed(range(n)):   # 從上到下
-        for j in range(n-i):       # 每排從左到右
+    for i in reversed(range(n)):
+        for j in range(n - i):
             z_val = i * step
             y_val = j * step
             x_val = max_val - y_val - z_val
@@ -169,61 +177,53 @@ def glaze_ternary_21points_numbered():
     
     df_ratio = pd.DataFrame(data, columns=['編號','X_ratio','Y_ratio','Z_ratio'])
     
-    # 計算比例因子
-    factor = total_weight / max_val  # 總克重除以 max_val，按比例分配
+    # ===== 比例換算（重點：用 base_weight）=====
+    factor = base_weight / max_val
     
-    # 計算每個小三角形克重
-    df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(0).astype(int)
-    df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(0).astype(int)
-    df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(0).astype(int)
-
+    df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(1)
+    df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(1)
+    df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(1)
     
-    # 畫圖
-  
+    # ===== 加入顏料（每個點固定）=====
+    df_ratio['顏料 (克)'] = round(color_weight, 1)
+    
+    # ===== 畫圖 =====
     fig, ax = plt.subplots(figsize=(6,6))
     
     for idx, row in df_ratio.iterrows():
-        # 對應 i,j
         i = int((max_val - row['X_ratio'] - row['Y_ratio']) // step)
         j = int(row['Y_ratio'] // step)
     
-        # 小三角形頂點
         den = (n - 1)
         
         x0, y0 = (j + 0.5*i)/den, i*np.sqrt(3)/(2*den)
         x1, y1 = x0 + 1/den, y0
         x2, y2 = x0 + 0.5/den, y0 + np.sqrt(3)/(2*den)
     
-        # 畫三角形
         tri = Polygon([[x0,y0],[x1,y1],[x2,y2]], closed=True,
                       edgecolor='lightgray', facecolor='none', lw=0.8)
         ax.add_patch(tri)
     
-        # 計算重心
         x_center = (x0 + x1 + x2)/3
         y_center = (y0 + y1 + y2)/3
     
-        # 編號文字顏色（例如紅色），XYZ 克重文字黑色
         number_text = f"{int(row['編號'])}"
         xyz_text = f"{row['X (克)']},{row['Y (克)']},{row['Z (克)']}"
-        
-        # 編號
-        ax.text(x_center, y_center + 0.01, number_text, ha='center', va='bottom', fontsize=6, color='blue', weight='bold')
-        # XYZ 克重
-        ax.text(x_center, y_center - 0.01, xyz_text, ha='center', va='top', fontsize=6, color='black')
-
     
-    # 畫正三角形邊界
-    #triangle = np.array([[0,0],[1,0],[0.5,np.sqrt(3)/2],[0,0]])
-    #ax.plot(triangle[:,0], triangle[:,1], color='black', lw=2)
+        ax.text(x_center, y_center + 0.01, number_text,
+                ha='center', va='bottom', fontsize=6,
+                color='blue', weight='bold')
+    
+        ax.text(x_center, y_center - 0.01, xyz_text,
+                ha='center', va='top', fontsize=6, color='black')
     
     ax.set_aspect('equal')
     ax.axis('off')
     st.pyplot(fig)
     
-    # 顯示表格
-
-    st.dataframe(df_ratio[['編號','X (克)','Y (克)','Z (克)']])
+    # ===== 表格 =====
+    st.subheader("各點位配方")
+    st.dataframe(df_ratio[['編號','X (克)','Y (克)','Z (克)','顏料 (克)']])
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
