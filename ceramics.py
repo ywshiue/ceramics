@@ -86,7 +86,7 @@ def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
 # ===============================
 def glaze_seger_calculator():
 
-    st.title("釉料三軸賽格式計算器")
+    st.subheader("釉料賽格三軸配方分析")
 
     # -----------------------
     # 讀 Excel
@@ -485,7 +485,7 @@ def glaze_forecast():
 
 # 主頁面設置
 st.sidebar.title("選擇功能")
-page = st.sidebar.radio("選擇頁面", ("釉料三軸賽格式計算器","收縮率計算", "石膏板材料計算"))
+page = st.sidebar.radio("選擇頁面", ("釉料賽格三軸配方分析","收縮率計算", "石膏板材料計算"))
 
 if page == "石膏板材料計算":
     st.subheader("石膏板材料計算(石膏比重採2.21)")
@@ -590,7 +590,7 @@ elif page == "收縮率計算":
 
 # --- 賽格式計算器頁面 ---
 
-elif page == "釉料三軸賽格式計算器":
+elif page == "釉料賽格三軸配方分析":
      glaze_seger_calculator()
 
 
