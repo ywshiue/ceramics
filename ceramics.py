@@ -139,7 +139,7 @@ def glaze_app(excel_path="glaze_ingredients.xlsx"):
     df = pd.read_excel(excel_path)
 
     # 材料選擇
-    materials = st.multiselect("選擇材料", df["名稱"].tolist())
+    materials = st.multiselect("選擇材料", df["成分名稱"].tolist())
 
     # 克重
     total_weight = st.number_input("總克重", 100.0)
