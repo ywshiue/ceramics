@@ -146,6 +146,9 @@ def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
 
 #-----------------------------------
 
+# ===============================
+# 工具函式（不變）
+# ===============================
 def format_number(val):
     if float(val).is_integer():
         return str(int(val))
@@ -163,19 +166,73 @@ def draw_hex(ax, cx, cy, size):
     return points
 
 
-def glaze_ternary_21points_numbered():
-    st.title("釉料三軸表")
+# ===============================
+# Seger 計算（你原本的，不動）
+# ===============================
+def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
+    total_moles = {}
 
-    # === 讀 Excel ===
+    for ing in selected_ingredients:
+        amt = amounts[ing]
+        rows = df[df["成分名稱"] == ing]
+
+        for _, row in rows.iterrows():
+            ox_list = [ox.strip() for ox in str(row["氧化物組成"]).split('+')]
+            try:
+                percent = float(row["百分比"])
+                mw = float(row["分子量（g/mol）"])
+                category = str(row["類別"]).strip()
+            except:
+                continue
+
+            moles_per_ox = (amt * percent / 100) / mw / len(ox_list)
+
+            for ox in ox_list:
+                if ox not in total_moles:
+                    total_moles[ox] = {"moles": 0.0, "category": category}
+                total_moles[ox]["moles"] += moles_per_ox
+
+    total_moles_df = pd.DataFrame([
+        {"氧化物": ox, "摩爾數": info["moles"], "類別": info["category"]}
+        for ox, info in total_moles.items()
+    ]).sort_values(by="氧化物").reset_index(drop=True)
+
+    ro_sum = total_moles_df[total_moles_df["類別"]=="RO"]["摩爾數"].sum()
+    r2o3_sum = total_moles_df[total_moles_df["類別"]=="R2O3"]["摩爾數"].sum()
+    ro2_sum = total_moles_df[total_moles_df["類別"]=="RO2"]["摩爾數"].sum()
+
+    norm_factor = ro_sum if ro_sum > 0 else 1.0
+
+    seger_ratios = {
+        "RO 鹼類": ro_sum / norm_factor,
+        "R2O3 中性物": r2o3_sum / norm_factor,
+        "RO2 酸類": ro2_sum / norm_factor
+    }
+
+    seger_ratio_text = " + ".join([f"{round(v,2)} {k}" for k,v in seger_ratios.items()])
+
+    return total_moles_df, seger_ratios, seger_ratio_text
+
+
+# ===============================
+# 主程式
+# ===============================
+def glaze_ternary_21points_numbered():
+
+    st.title("釉料三軸表 + 賽格式整合")
+
+    # -----------------------
+    # 讀 Excel
+    # -----------------------
     df_excel = pd.read_excel("glaze_ingredients.xlsx")
 
-    # === UI ===
-    total_weight = st.number_input("總克重 (克)",min_value=0.0,value=100.0,step=1.0)
+    # -----------------------
+    # UI
+    # -----------------------
+    total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
 
-    # 顏色 % → slider
     color_percent = st.slider("呈色 (%)", 0.0, 10.0, 3.0, step=1.0)
 
-    # 篩選變價氧化物
     color_options = (
         df_excel[df_excel["類型"] == "變價氧化物"]["氧化物組成"]
         .dropna()
@@ -184,7 +241,19 @@ def glaze_ternary_21points_numbered():
     )
 
     color_name = st.selectbox("顏色成分", color_options)
-    
+
+    # -----------------------
+    # XYZ 對應材料（重點）
+    # -----------------------
+    ingredient_options = df_excel["成分名稱"].dropna().unique().tolist()
+
+    x_ing = st.selectbox("X 軸原料（RO）", ingredient_options)
+    y_ing = st.selectbox("Y 軸原料（RO2）", ingredient_options)
+    z_ing = st.selectbox("Z 軸原料（R2O3）", ingredient_options)
+
+    # -----------------------
+    # 顏色克重拆分
+    # -----------------------
     color_weight = total_weight * (color_percent / 100)
     base_total = total_weight - color_weight
 
@@ -192,14 +261,16 @@ def glaze_ternary_21points_numbered():
     st.write(f"基礎配方克重：{format_number(base_total)} g")
     st.write(f"顏色成分克重：{format_number(color_weight)} g")
 
-    # === 三軸參數 ===
+    # -----------------------
+    # 三軸點生成
+    # -----------------------
     n = 11
     step = 10
     max_val = step * (n - 1)
 
-    # === 建立比例 ===
     data = []
     number = 1
+
     for i in reversed(range(n)):
         for j in range(n - i):
             z_val = i * step
@@ -213,9 +284,6 @@ def glaze_ternary_21points_numbered():
         columns=['編號','X(RO)','Y(RO2)','Z(R2O3)','i','j']
     )
 
-    # === 顏色計算 ===
-    color_weight = total_weight * (color_percent / 100)
-    base_total = total_weight - color_weight
     factor = base_total / max_val
 
     df['X_RO (克)'] = df['X(RO)'] * factor
@@ -223,7 +291,9 @@ def glaze_ternary_21points_numbered():
     df['Z_R2O3 (克)'] = df['Z(R2O3)'] * factor
     df['Color (克)'] = color_weight
 
-    # === 畫圖 ===
+    # -----------------------
+    # 圖
+    # -----------------------
     fig, ax = plt.subplots(figsize=(6,6))
 
     size = 1 / (n * 1.2)
@@ -244,45 +314,27 @@ def glaze_ternary_21points_numbered():
             all_x.append(px)
             all_y.append(py)
 
-        number_text = str(int(row['編號']))
-
-        x_text = (
-            f"{format_number(row['X_RO (克)'])}"
-        )
-        y_text = (
-            f"{format_number(row['Y_RO2 (克)'])}"
-        )
-        z_text = (
-            f"{format_number(row['Z_R2O3 (克)'])}"
-        )
-
-        color_text = f"{color_name} {format_number(row['Color (克)'])}"
-
         ax.text(x, y + size*0.45,
-                number_text,
+                str(int(row['編號'])),
                 ha='center', va='bottom',
                 fontsize=5, color='blue', weight='bold')
 
         ax.text(x, y + size*0.3,
-                "X= "+ x_text,
-                ha='center', va='center',
-                fontsize=4)
+                "X= " + format_number(row['X_RO (克)']),
+                ha='center', fontsize=4)
+
         ax.text(x, y,
-                "Y= "+ y_text,
-                ha='center', va='center',
-                fontsize=4)
+                "Y= " + format_number(row['Y_RO2 (克)']),
+                ha='center', fontsize=4)
+
         ax.text(x, y - size*0.3,
-                "Z= "+ z_text,
-                ha='center', va='center',
-                fontsize=4)
-        
+                "Z= " + format_number(row['Z_R2O3 (克)']),
+                ha='center', fontsize=4)
 
         ax.text(x, y - size*0.45,
-                color_text,
-                ha='center', va='top',
-                fontsize=4, color='green')
+                f"{color_name} {format_number(row['Color (克)'])}",
+                ha='center', fontsize=4, color='green')
 
-    # === 防裁切 ===
     padding = size * 1.2
     ax.set_xlim(min(all_x) - padding, max(all_x) + padding)
     ax.set_ylim(min(all_y) - padding, max(all_y) + padding)
@@ -292,12 +344,38 @@ def glaze_ternary_21points_numbered():
 
     st.pyplot(fig)
 
-    # === 表格 ===
+    # -----------------------
+    # 表格
+    # -----------------------
     df_display = df.copy()
     for col in ['X_RO (克)','Y_RO2 (克)','Z_R2O3 (克)','Color (克)']:
         df_display[col] = df_display[col].apply(format_number)
 
     st.dataframe(df_display[['編號','X_RO (克)','Y_RO2 (克)','Z_R2O3 (克)','Color (克)']])
+
+    # ===============================
+    # ✔ Seger（新增：核心整合）
+    # ===============================
+    selected_number = st.selectbox("選擇賽格式計算編號", df['編號'].tolist())
+    row = df[df['編號'] == selected_number].iloc[0]
+
+    amounts = {
+        x_ing: float(row['X_RO (克)']),
+        y_ing: float(row['Y_RO2 (克)']),
+        z_ing: float(row['Z_R2O3 (克)'])
+    }
+
+    selected_ingredients = [x_ing, y_ing, z_ing]
+
+    seger_df, seger_ratios, seger_text = calculate_seger_moles_from_excel(
+        df_excel,
+        selected_ingredients,
+        amounts
+    )
+
+    st.subheader("賽格式結果")
+    st.write(seger_text)
+    st.dataframe(seger_df)
     
 # -----------------------
 def glaze_app(excel_path="glaze_ingredients.xlsx"):
