@@ -323,12 +323,12 @@ def glaze_seger_calculator():
             all_x.append(px)
             all_y.append(py)
 
-        ax.text(x, y + size*0.45,
+        ax.text(x, y + size*0.48,
                 str(int(row['編號'])),
                 ha='center', va='bottom',
                 fontsize=5, color='blue', weight='bold')
 
-        ax.text(x, y + size*0.3,
+        ax.text(x, y + size*0.28,
                 "X= " + format_number(row['X_RO (克)']),
                 ha='center', fontsize=4)
 
@@ -336,11 +336,11 @@ def glaze_seger_calculator():
                 "Y= " + format_number(row['Y_RO2 (克)']),
                 ha='center', fontsize=4)
 
-        ax.text(x, y - size*0.3,
+        ax.text(x, y - size*0.28,
                 "Z= " + format_number(row['Z_R2O3 (克)']),
                 ha='center', fontsize=4)
 
-        ax.text(x, y - size*0.45,
+        ax.text(x, y - size*0.48,
                 f"{color_name} {format_number(row['Color (克)'])}",
                 ha='center', fontsize=4, color='green')
 
