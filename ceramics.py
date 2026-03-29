@@ -709,5 +709,5 @@ elif page == "收縮率計算":
 # --- 賽格式計算器頁面 ---
 
 elif page == "釉料三軸賽格式計算器":
-    glaze_seger_calculator()
+     glaze_seger_calculator()
     
