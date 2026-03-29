@@ -592,4 +592,16 @@ elif page == "收縮率計算":
 
 elif page == "釉料三軸賽格式計算器":
      glaze_seger_calculator()
-    
+
+
+st.markdown("---")  # 分隔線
+
+st.markdown(
+    """
+    <div style='text-align: center; font-size:14px; color: gray;'>
+        本程式開發由 <b>是阿薛</b> 撰寫，IG:  
+        <a href='https://www.instagram.com/ywshiue' target='_blank'>@ywshiue</a>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
