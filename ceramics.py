@@ -17,17 +17,27 @@ import matplotlib.pyplot as plt
 import streamlit as st
 
 
+import streamlit as st
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.patches import Polygon
 
-# -----------------------
+
+# =========================
+# ① Seger 計算核心
+# =========================
 def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
+
     total_moles = {}
 
     for ing in selected_ingredients:
         amt = amounts[ing]
-        rows = df[df["成分名稱"] == ing]
+        rows = df[df["名稱"] == ing]
 
         for _, row in rows.iterrows():
             ox_list = [ox.strip() for ox in str(row["氧化物組成"]).split('+')]
+
             try:
                 percent = float(row["百分比"])
                 mw = float(row["分子量（g/mol）"])
@@ -40,220 +50,132 @@ def calculate_seger_moles_from_excel(df, selected_ingredients, amounts):
             for ox in ox_list:
                 if ox not in total_moles:
                     total_moles[ox] = {"moles": 0.0, "category": category}
+
                 total_moles[ox]["moles"] += moles_per_ox
 
     total_moles_df = pd.DataFrame([
-        {"氧化物": ox, "摩爾數": info["moles"], "類別": info["category"]}
-        for ox, info in total_moles.items()
-    ]).sort_values(by="氧化物").reset_index(drop=True)
+        {"氧化物": ox, "摩爾數": v["moles"], "類別": v["category"]}
+        for ox, v in total_moles.items()
+    ]).sort_values("氧化物").reset_index(drop=True)
 
-    ro_sum = total_moles_df[total_moles_df["類別"]=="RO"]["摩爾數"].sum()
-    r2o3_sum = total_moles_df[total_moles_df["類別"]=="R2O3"]["摩爾數"].sum()
-    ro2_sum = total_moles_df[total_moles_df["類別"]=="RO2"]["摩爾數"].sum()
+    ro_sum = total_moles_df[total_moles_df["類別"] == "RO"]["摩爾數"].sum()
+    r2o3_sum = total_moles_df[total_moles_df["類別"] == "R2O3"]["摩爾數"].sum()
+    ro2_sum = total_moles_df[total_moles_df["類別"] == "RO2"]["摩爾數"].sum()
 
-    norm_factor = ro_sum if ro_sum > 0 else 1.0
-    seger_ratios = {
-        "RO 鹼類": ro_sum / norm_factor,
-        "R2O3 中性物": r2o3_sum / norm_factor,
-        "RO2 酸類": ro2_sum / norm_factor
+    norm = ro_sum if ro_sum > 0 else 1.0
+
+    seger = {
+        "RO": ro_sum / norm,
+        "R2O3": r2o3_sum / norm,
+        "RO2": ro2_sum / norm
     }
 
-    seger_ratio_text = " + ".join([f"{round(v,2)} {k}" for k,v in seger_ratios.items()])
-    return total_moles_df, seger_ratios, seger_ratio_text
+    return total_moles_df, seger
 
-# 賽格式計算
-def glaze_ternary_app(excel_path="glaze_materials_streamlit.xlsx"):
-    """
-    Streamlit 賽格式計算器函式
-    1. 讀取原料 Excel
-    2. 選擇原料或配料
-    3. 輸入總克重
-    4. 選擇 21 點編號
-    5. 計算賽格式克重
-    6. 顯示三角形圖與表格
-    """
-    
-    st.title("賽格式計算")
-    
-    # 讀取 Excel
-    df = pd.read_excel(excel_path)
-    
-    # 選擇原料
-    selected_materials = st.multiselect(
-        "選擇原料或配料",
-        options=df['名稱'].tolist()
-    )
-    
-    df_selected = df[df['名稱'].isin(selected_materials)]
-    st.subheader("選擇的原料")
-    st.dataframe(df_selected)
-    
-    # 輸入總克重
-    total_weight = st.number_input("輸入總克重 (克)", min_value=0.0, value=100.0, step=1.0)
-    
-    # 21 點比例表 (示範，可改為 Excel 匯入)
-    max_val = 50
-    step = 10
-    n = 6
-    data = []
-    number = 1
-    for i in reversed(range(n)):
-        for j in range(n-i):
-            z_val = i * step
-            y_val = j * step
-            x_val = max_val - y_val - z_val
-            data.append([number, x_val, y_val, z_val])
-            number += 1
-    df_ratio = pd.DataFrame(data, columns=['編號','X_ratio','Y_ratio','Z_ratio'])
-    
-    # 選擇編號
-    selected_number = st.selectbox("選擇 21 點編號", df_ratio['編號'].tolist())
-    row = df_ratio[df_ratio['編號']==selected_number].iloc[0]
-    
-    # 計算賽格式克重
-    factor = total_weight / max_val
-    X_weight = int(row['X_ratio'] * factor)
-    Y_weight = int(row['Y_ratio'] * factor)
-    Z_weight = int(row['Z_ratio'] * factor)
-    
-    st.subheader(f"選擇編號 {selected_number} 的賽格式克重")
-    st.write(f"X: {X_weight} g, Y: {Y_weight} g, Z: {Z_weight} g")
-    
-    # 畫三角形比例圖
-    fig, ax = plt.subplots(figsize=(6,6))
-    for idx, r in df_ratio.iterrows():
-        i = int((50 - r['X_ratio'] - r['Y_ratio']) // step)
-        j = int(r['Y_ratio'] // step)
-        x0, y0 = (j + 0.5*i)/n, i*np.sqrt(3)/(2*n)
-        x1, y1 = x0 + 1/n, y0
-        x2, y2 = x0 + 0.5/n, y0 + np.sqrt(3)/(2*n)
-        tri = Polygon([[x0,y0],[x1,y1],[x2,y2]], closed=True,
-                      edgecolor='lightgray', facecolor='none', lw=0.8)
-        ax.add_patch(tri)
-        x_center = (x0 + x1 + x2)/3
-        y_center = (y0 + y1 + y2)/3
-        number_text = str(int(r['編號']))
-        xyz_text = f"{int(r['X_ratio']*factor)},{int(r['Y_ratio']*factor)},{int(r['Z_ratio']*factor)}"
-        ax.text(x_center, y_center + 0.01, number_text, ha='center', va='bottom', fontsize=6, color='blue', weight='bold')
-        ax.text(x_center, y_center - 0.01, xyz_text, ha='center', va='top', fontsize=6, color='black')
 
-    triangle = np.array([[0,0],[1,0],[0.5,np.sqrt(3)/2],[0,0]])
-    ax.plot(triangle[:,0], triangle[:,1], color='black', lw=2)
-    ax.set_aspect('equal')
-    ax.axis('off')
-    st.pyplot(fig)
-    
-
-def glaze_ternary_21points_numbered():
-    st.title("釉料三軸表")
-    
-    # 使用者輸入總克重（單一欄位）
-    total_weight = st.number_input("總克重 (克)", min_value=0.0, value=100.0, step=1.0)
-    
-    
-    # 參數設定
-    n = 11
-    step = 10
+# =========================
+# ② 三軸點生成（66點）
+# =========================
+def generate_ternary_points(n=11, step=10):
     max_val = step * (n - 1)
-    
-    # 建立小三角形 XYZ 比例表
+
     data = []
-    number = 1
-    for i in reversed(range(n)):   # 從上到下
-        for j in range(n-i):       # 每排從左到右
-            z_val = i * step
-            y_val = j * step
-            x_val = max_val - y_val - z_val
-            data.append([number, x_val, y_val, z_val])
-            number += 1
-    
-    df_ratio = pd.DataFrame(data, columns=['編號','X_ratio','Y_ratio','Z_ratio'])
-    
-    # 計算比例因子
-    factor = total_weight / max_val  # 總克重除以 max_val，按比例分配
-    
-    # 計算每個小三角形克重
-    df_ratio['X (克)'] = (df_ratio['X_ratio'] * factor).round(0).astype(int)
-    df_ratio['Y (克)'] = (df_ratio['Y_ratio'] * factor).round(0).astype(int)
-    df_ratio['Z (克)'] = (df_ratio['Z_ratio'] * factor).round(0).astype(int)
+    num = 1
 
-    
-    # 畫圖
-  
-    fig, ax = plt.subplots(figsize=(6,6))
-    
-    for idx, row in df_ratio.iterrows():
-        # 對應 i,j
-        i = int((max_val - row['X_ratio'] - row['Y_ratio']) // step)
-        j = int(row['Y_ratio'] // step)
-    
-        # 小三角形頂點
-        den = (n - 1)
-        
-        x0, y0 = (j + 0.5*i)/den, i*np.sqrt(3)/(2*den)
-        x1, y1 = x0 + 1/den, y0
-        x2, y2 = x0 + 0.5/den, y0 + np.sqrt(3)/(2*den)
-    
-        # 畫三角形
-        tri = Polygon([[x0,y0],[x1,y1],[x2,y2]], closed=True,
-                      edgecolor='lightgray', facecolor='none', lw=0.8)
+    for i in reversed(range(n)):
+        for j in range(n - i):
+            z = i * step
+            y = j * step
+            x = max_val - y - z
+            data.append([num, x, y, z])
+            num += 1
+
+    return pd.DataFrame(data, columns=["編號", "RO", "RO2", "R2O3"])
+
+
+# =========================
+# ③ 三角圖畫圖
+# =========================
+def draw_ternary(df, title="Ternary"):
+    fig, ax = plt.subplots(figsize=(6, 6))
+
+    n = int(np.sqrt(len(df))) + 1
+    den = n - 1
+
+    for _, row in df.iterrows():
+
+        i = int((df["RO"].max() - row["RO"] - row["RO2"]) // 10)
+        j = int(row["RO2"] // 10)
+
+        x0, y0 = (j + 0.5 * i) / den, i * np.sqrt(3) / (2 * den)
+        x1, y1 = x0 + 1 / den, y0
+        x2, y2 = x0 + 0.5 / den, y0 + np.sqrt(3) / (2 * den)
+
+        tri = Polygon([[x0, y0], [x1, y1], [x2, y2]],
+                      closed=True, edgecolor="lightgray", facecolor="none", lw=0.6)
         ax.add_patch(tri)
-    
-        # 計算重心
-        x_center = (x0 + x1 + x2)/3
-        y_center = (y0 + y1 + y2)/3
-    
-        # 編號文字顏色（例如紅色），XYZ 克重文字黑色
-        number_text = f"{int(row['編號'])}"
-        xyz_text = f"{row['X (克)']},{row['Y (克)']},{row['Z (克)']}"
-        
-        # 編號
-        ax.text(x_center, y_center + 0.01, number_text, ha='center', va='bottom', fontsize=6, color='blue', weight='bold')
-        # XYZ 克重
-        ax.text(x_center, y_center - 0.01, xyz_text, ha='center', va='top', fontsize=6, color='black')
 
-    
-    # 畫正三角形邊界
-    #triangle = np.array([[0,0],[1,0],[0.5,np.sqrt(3)/2],[0,0]])
-    #ax.plot(triangle[:,0], triangle[:,1], color='black', lw=2)
-    
-    ax.set_aspect('equal')
-    ax.axis('off')
-    st.pyplot(fig)
-    
-    # 顯示表格
+        cx = (x0 + x1 + x2) / 3
+        cy = (y0 + y1 + y2) / 3
 
-    st.dataframe(df_ratio[['編號','X (克)','Y (克)','Z (克)']])
-    
-# -----------------------
-def glaze_app(excel_path="glaze_ingredients.xlsx"):
-    st.title("Seger")
+        ax.text(cx, cy, str(row["編號"]),
+                ha="center", va="center", fontsize=6)
 
+    ax.set_aspect("equal")
+    ax.axis("off")
+    ax.set_title(title)
+
+    return fig
+
+
+# =========================
+# ④ 主 App
+# =========================
+def glaze_app(excel_path="glaze_materials_streamlit.xlsx"):
+
+    st.title("三軸 + Seger 整合釉料系統")
+
+    # 讀資料
     df = pd.read_excel(excel_path)
-    df.columns = df.columns.str.strip()
 
-    selected_ingredients = st.multiselect(
-        "選擇原料",
-        df["成分名稱"].unique().tolist(),
-        default=df["成分名稱"].unique().tolist()[:3]
-    )
+    # 材料選擇
+    materials = st.multiselect("選擇材料", df["名稱"].tolist())
 
-    amounts = {}
-    for ing in selected_ingredients:
-        amounts[ing] = st.number_input(
-            f"{ing} 的重量 (g)",
-            min_value=0.0,
-            max_value=1000.0,
-            value=10.0,
-            step=1.0
+    # 克重
+    total_weight = st.number_input("總克重", 100.0)
+
+    # 建立 66 點
+    ternary = generate_ternary_points()
+
+    st.subheader("三軸設計空間 (RO / RO2 / R2O3)")
+    st.pyplot(draw_ternary(ternary))
+
+    # 選點
+    idx = st.selectbox("選擇點位編號", ternary["編號"])
+
+    row = ternary[ternary["編號"] == idx].iloc[0]
+
+    st.subheader("該點克重分配")
+
+    st.write({
+        "RO": row["RO"],
+        "RO2": row["RO2"],
+        "R2O3": row["R2O3"]
+    })
+
+    # 材料克重（簡化：平均分配）
+    if materials:
+
+        weights = {m: total_weight / len(materials) for m in materials}
+
+        st.subheader("Seger 計算")
+
+        seger_df, seger = calculate_seger_moles_from_excel(
+            df, materials, weights
         )
 
-    if st.button("計算並繪圖"):
-        total_moles_df, seger_ratios, seger_ratio_text = calculate_seger_moles_from_excel(df, selected_ingredients, amounts)
-        st.subheader("各氧化物原始摩爾數")
-        st.dataframe(total_moles_df)
-        st.subheader("Seger 比例 ( RO 為1)")
-        st.code(seger_ratio_text)
+        st.dataframe(seger_df)
+        st.write("Seger Ratio:", seger)
 
     
 def calculate_plaster(length, width, height, proportion):
